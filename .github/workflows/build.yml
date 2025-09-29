@@ -1,50 +1,65 @@
-name: Build Electron App
+name: Electron Build & Release
 
 on:
   push:
-    branches:
-      - main
-  pull_request:
+    tags:
+      - 'v*.*.*'   # Тригер само при версии, напр. v1.0.0
+  workflow_dispatch:  # Позволява ръчно стартиране
 
 jobs:
   build:
-    timeout-minutes: 30
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-
-    runs-on: ${{ matrix.os }}
+        os: [windows-latest, macos-latest, ubuntu-latest]
+        node: [20]
 
     steps:
-      - name: Checkout code
+      # 1. Checkout
+      - name: Checkout repo
         uses: actions/checkout@v4
 
+      # 2. Setup Node.js
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: ${{ matrix.node }}
 
-      - name: Cache Node.js modules
+      # 3. Cache npm packages
+      - name: Cache npm
         uses: actions/cache@v4
         with:
-          path: |
-            ~/.npm
-            ~/.cache/electron
-            ~/.cache/electron-builder
+          path: ~/.npm
           key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
           restore-keys: |
             ${{ runner.os }}-node-
 
-      - name: Install dependencies
-        run: npm install
+      # 4. Clean install (със CI за по-надеждно)
+      - name: Clean install
+        run: |
+          if [ -d "node_modules" ]; then rm -rf node_modules; fi
+          if [ -f "package-lock.json" ]; then rm package-lock.json; fi
+          npm ci
 
-      - name: Build app
+      # 5. Build Electron app
+      - name: Build Electron App
         run: npm run dist
         env:
-            GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
 
-      - name: Upload artifacts
+      # 6. Zip macOS / Linux builds, ако има нужда (Windows вече exe)
+      - name: Zip artifacts (macOS/Linux)
+        if: runner.os != 'Windows'
+        run: |
+          zip -r build-${{ runner.os }}.zip dist/*
+
+      # 7. Upload build artifacts
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ runner.os }}-build
-          path: dist/*
+          path: |
+            dist/*
+            build-${{ runner.os }}.zip
+          if-no-files-found: warn
+          compression-level: 0
