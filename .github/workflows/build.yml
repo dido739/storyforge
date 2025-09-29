@@ -1,22 +1,22 @@
-name: Electron Build & Release
+name: Electron Build
 
 on:
   push:
     tags:
-      - 'v*.*.*'   # Тригер само при версии, напр. v1.0.0
-  workflow_dispatch:  # Позволява ръчно стартиране
+      - 'v*.*.*'   # Стартира при push на версия, напр. v1.0.0
+  workflow_dispatch: # Позволява ръчно стартиране
 
 jobs:
   build:
-    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: [windows-latest, macos-latest, ubuntu-latest]
         node: [20]
+    runs-on: ${{ matrix.os }}
 
     steps:
       # 1. Checkout
-      - name: Checkout repo
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       # 2. Setup Node.js
@@ -34,8 +34,8 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-node-
 
-      # 4. Clean install (със CI за по-надеждно)
-      - name: Clean install
+      # 4. Clean install
+      - name: Clean install dependencies
         run: |
           if [ -d "node_modules" ]; then rm -rf node_modules; fi
           if [ -f "package-lock.json" ]; then rm package-lock.json; fi
@@ -45,16 +45,16 @@ jobs:
       - name: Build Electron App
         run: npm run dist
         env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_TOKEN }} # За автоматично публикуване към Release, ако имаш
 
-      # 6. Zip macOS / Linux builds, ако има нужда (Windows вече exe)
-      - name: Zip artifacts (macOS/Linux)
+      # 6. Zip non-Windows builds
+      - name: Zip macOS/Linux builds
         if: runner.os != 'Windows'
         run: |
           zip -r build-${{ runner.os }}.zip dist/*
 
-      # 7. Upload build artifacts
-      - name: Upload artifact
+      # 7. Upload artifacts
+      - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
           name: ${{ runner.os }}-build
