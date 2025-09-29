@@ -1,0 +1,23 @@
+<!-- index.html -->
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>StoryForge</title>
+  </head>
+  <body>
+    <h1>StoryForge – Писане на книги</h1>
+    <textarea id="editor" style="width:100%; height:400px;"></textarea>
+    <button id="save">Запази глава</button>
+
+    <script>
+      document.getElementById("save").onclick = async () => {
+        const content = document.getElementById("editor").value;
+        const filePath = await window.api.saveChapter({
+          filename: "chapter1.md",
+          content,
+        });
+        alert("Главата е запазена в: " + filePath);
+      };
+    </script>
+  </body>
+</html>
