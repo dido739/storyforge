@@ -6,10 +6,26 @@
     <link rel="stylesheet" href="style.css">
   </head>
   <body>
-    <h1>StoryForge – Писане на книги</h1>
-    <textarea id="editor" style="width:100%; height:400px;"></textarea>
+    <h1 id="title">StoryForge</h1>
+    
+    <div id="editor" style="height: 400px;"></div>
+    <div id="content"></div>
     <button id="save">Запази глава</button>
-    <button class="save">Запази </button>
+    <!-- <button class="save">Запази </button> -->
+    <script src="https://unpkg.com/overtype/dist/overtype.min.js"></script>
+    <script>
+      const editor = new OverType('#editor', {
+        placeholder: 'Start typing markdown...',
+        value: '# Welcome\n\nStart writing **markdown** here!',
+        toolbar: true,  // Enables the toolbar
+        showStats: true,
+        theme: 'solar',
+        onChange: (value, instance) => {
+            console.log('Content changed:', value);
+          }
+      });
+    </script>
+    
 
     <script>
       document.getElementById("save").onclick = async () => {
